@@ -1,0 +1,46 @@
+services:
+  database:
+    image: mysql:8.0
+    container_name: mysql-container
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: taskdb
+    volume:
+      - mysql-data: /var/lib/mysql
+    ports:
+      - "3606:3606"
+    healthcheck:
+      test ["CMD","mysqladmin","ping","-h","localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  backend:
+    container_name: backend-container
+    context: build
+    restart: always
+    environment:
+      DB_HOST: database
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: taskdb
+    ports:
+      - "5000:5000"
+    depends_on:
+      database:
+        condition: service_healthy
+
+  frontend:
+    container_name: frontend-container
+    build:
+      context: ./frontend
+    image: frontend-image
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_started
+    
+volumes:
+  mysql-data
